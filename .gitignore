@@ -2,3 +2,4 @@ demo/
 .cursor/
 faas.md
 vidu-maas.openapi.json
+node_modules/
