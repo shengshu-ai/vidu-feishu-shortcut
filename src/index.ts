@@ -151,6 +151,10 @@ basekit.addField({
         'large': '大',
         'choose_task_type': '请选择任务类型',
         'prompt_placeholder': '图片中的人们对着屏幕比心',
+        'bgm': '背景音乐',
+        'bgm_on': '开启',
+        'bgm_off': '关闭',
+        'aspect_ratio': '生视频比例',
       },
       'en-US': {
         'env': 'API Environment',
@@ -182,6 +186,10 @@ basekit.addField({
         'large': 'Large',
         'choose_task_type': 'Please select a task type',
         'prompt_placeholder': 'The astronaut waved and the camera moved up.',
+        'bgm': 'Background Music',
+        'bgm_on': 'On',
+        'bgm_off': 'Off',
+        'aspect_ratio': 'Aspect Ratio',
       }
     }
   },
@@ -288,6 +296,35 @@ basekit.addField({
       }
     },
     {
+      key: 'aspect_ratio',
+      label: t('aspect_ratio'),
+      component: FieldComponent.SingleSelect,
+      props: {
+        options: [
+          { label: '16:9', value: '16:9' },
+          { label: '9:16', value: '9:16' },
+          { label: '1:1', value: '1:1' },
+        ]
+      },
+      validator: {
+        required: false,
+      }
+    },
+    {
+      key: 'bgm',
+      label: t('bgm'),
+      component: FieldComponent.SingleSelect,
+      props: {
+        options: [
+          { label: t('bgm_on'), value: true },
+          { label: t('bgm_off'), value: false }
+        ]
+      },
+      validator: {
+        required: false,
+      }
+    },
+    {
       key: 'movementAmplitude',
       label: t('movement_amplitude'),
       component: FieldComponent.SingleSelect,
@@ -318,6 +355,8 @@ basekit.addField({
       images,  
       duration, 
       resolution,
+      aspect_ratio,
+      bgm,
       movementAmplitude,
     } = formItemParams;
 
@@ -345,7 +384,9 @@ basekit.addField({
         prompt, 
         duration?.value, 
         resolution?.value, 
+        aspect_ratio?.value,
         movementAmplitude?.value,
+        bgm?.value,
       );
 
       debugLog({
@@ -386,7 +427,9 @@ async function callViduEntApi(
   prompt: string, 
   duration?: number, 
   resolution?: string, 
+  aspect_ratio?: string,
   movementAmplitude?: string,
+  bgm?: boolean,
 ): Promise<string> {
   try {
     const endpoint = TaskTypeEndpoint[taskType];
@@ -398,7 +441,9 @@ async function callViduEntApi(
       images,
       duration,
       resolution,
-      movement_amplitude: movementAmplitude as 'auto' | 'small' | 'medium' | 'large'
+      aspect_ratio,
+      movement_amplitude: movementAmplitude as 'auto' | 'small' | 'medium' | 'large',
+      bgm,
     };
 
     const response = await context.fetch(`${apiUrl}/${endpoint}`, {
@@ -449,13 +494,8 @@ async function getTaskResult(context: FieldContext, env: ViduEnv, taskId: string
  */
 function extractImageUrls(images: any[]): string[] {
   try {
-    const imageUrls = images.map((imageAttachment) => {
-      const image = imageAttachment?.[0];
-      if (image) {
-        return image.tmp_url;
-      }
-    });
-    return imageUrls.filter((url) => url !== undefined);
+    const imageUrls = images.map((imageAttachments) => imageAttachments.map((image) => image.tmp_url));
+    return imageUrls.flat().filter((url) => url !== undefined);
   } catch (error: any) {
     throw new Error(`提取图片URL失败: ${error.message}`);
   }
