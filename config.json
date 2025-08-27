@@ -1,7 +1,7 @@
 {
-  "app_id": "your_app_id_here",
-  "app_secret": "your_app_secret_here",
-  "base_url": "https://open.feishu.cn",
-  "debug": true,
-  "port": 3000
-} 
+  "authorizations": [
+      [
+         "Token vda_814386264491954176_Kpc1bs5fqFu7RNWKRCYz0ubJ0eWibr26"
+      ]
+  ]
+}

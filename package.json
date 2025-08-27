@@ -4,40 +4,20 @@
   "description": "飞书快捷指令项目 - 集成Vidu API",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "nodemon --watch src --ext ts --exec \"ts-node src/index.ts\"",
-    "test": "jest",
-    "lint": "eslint src/**/*.ts",
-    "format": "prettier --write src/**/*.ts"
+    "start": "block-basekit-cli start:field",
+    "build": "block-basekit-cli build:field",
+    "pack": "block-basekit-cli pack:field",
+    "test": "block-basekit-cli test:field",
+    "dev": "block-basekit-cli dev:field"
   },
-  "keywords": [
-    "feishu",
-    "shortcut",
-    "vidu",
-    "api",
-    "typescript"
-  ],
   "author": "",
-  "license": "MIT",
+  "license": "ISC",
   "dependencies": {
-    "@lark-opdev/block-basekit-server-api": "^1.0.0",
+    "@lark-opdev/block-basekit-server-api": "1.0.6",
     "@types/uuid": "^10.0.0",
-    "axios": "^1.11.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "@types/node": "^14.18.0",
-    "@typescript-eslint/eslint-plugin": "^5.0.0",
-    "@typescript-eslint/parser": "^5.0.0",
-    "eslint": "^8.0.0",
-    "jest": "^27.0.0",
-    "nodemon": "^2.0.0",
-    "prettier": "^2.0.0",
-    "ts-node": "^10.0.0",
-    "typescript": "^4.5.0"
-  },
-  "engines": {
-    "node": "14.21.0"
+     "@lark-opdev/block-basekit-cli": "1.0.5"
   }
 }

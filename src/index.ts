@@ -1,5 +1,4 @@
-import { basekit, FieldType, field, FieldComponent, FieldCode, NumberFormatter, AuthorizationType } from '@lark-opdev/block-basekit-server-api';
-import axios from 'axios';
+import { basekit, FieldType, field, FieldComponent, FieldCode, AuthorizationType, FieldContext } from '@lark-opdev/block-basekit-server-api';
 import { v4 as uuidv4 } from 'uuid';
 
 const { t } = field;
@@ -10,7 +9,8 @@ basekit.addDomainList([
   'feishucdn.com', 
   'larksuitecdn.com', 
   'larksuite.com',
-  'api.vidu.cn' // Vidu API域名
+  'api.vidu.cn', 
+  'api.vidu.com',
 ]);
 
 // 定义Vidu任务类型枚举
@@ -25,6 +25,24 @@ enum ViduModel {
   VIDUQ1 = 'viduq1',
   VIDU1_5 = 'vidu1.5',
   VIDU2_0 = 'vidu2.0'
+}
+
+
+const TaskTypeEndpoint = {
+  [ViduTaskType.IMG2VIDEO]: 'ent/v2/img2video',
+  [ViduTaskType.REFERENCE2VIDEO]: 'ent/v2/reference2video',
+  [ViduTaskType.STARTEND2VIDEO]: 'ent/v2/start-end2video'
+}
+
+
+enum ViduEnv {
+  PROD = 'prod',
+  PROD_S = 'prod_s'
+}
+
+const ViduEnvApi = {
+  [ViduEnv.PROD]: 'https://api.vidu.cn',
+  [ViduEnv.PROD_S]: 'https://api.vidu.com'
 }
 
 // 定义Vidu API响应类型
@@ -48,6 +66,19 @@ interface ViduApiResponse {
   off_peak?: boolean;
 }
 
+interface Creation {
+  id: string;
+  state: string;
+  url: string;
+}
+
+interface ViduGetCreationsResult {
+  id: string;
+  state: 'created' | 'processing' | 'queueing' | 'success' | 'failed';
+  creations: Creation[];
+  err_code: string;
+}
+
 // 定义Vidu API请求参数类型
 interface ViduApiRequest {
   model: string;
@@ -69,31 +100,31 @@ interface ViduApiRequest {
   off_peak?: boolean;
 }
 
-// 定义环境变量类型
-interface EnvConfig {
-  VIDU_API_KEY: string;
-  VIDU_API_URL: string;
-}
-
-// 获取环境配置
-function getEnvConfig(): EnvConfig {
-  const config = {
-    VIDU_API_KEY: process.env['VIDU_API_KEY'] || '',
-    VIDU_API_URL: process.env['VIDU_API_URL'] || 'https://api.vidu.cn'
-  };
-  
-  if (!config.VIDU_API_KEY) {
-    throw new Error('VIDU_API_KEY 环境变量未设置');
-  }
-  
-  return config;
-}
-
 basekit.addField({
+  authorizations: [
+    {
+      id: 'vidu_auth',// 授权的id，用于context.fetch第三个参数以区分该请求使用哪个授权
+      platform: 'vidu',// 需要与之授权的平台,比如baidu(必须要是已经支持的三方凭证,不可随便填写,如果想要支持更多的凭证，请填写申请表单)
+      type: AuthorizationType.MultiHeaderToken,
+      required: true,
+      params: [
+        { key: "Authorization", placeholder: "Authorization" },
+      ],
+      instructionsUrl: "https://shengshu.feishu.cn/docx/Fiz7drhdroWG59xpGsAcfA8Xn9b",// 帮助链接，告诉使用者如何填写这个apikey
+      label: 'vidu授权',
+      icon: {
+        light: '',
+        dark: ''
+      }
+    }
+  ],
   // 定义捷径的i18n语言资源
   i18n: {
     messages: {
       'zh-CN': {
+        'env': 'API环境',
+        'prod': '国内',
+        'prod_s': '海外',
         'task_type': '任务类型',
         'model': '模型选择',
         'images': '图片输入',
@@ -115,11 +146,16 @@ basekit.addField({
         'general': '通用风格',
         'anime': '动漫风格',
         'auto': '自动',
-        'small': '小幅',
-        'medium': '中幅',
-        'large': '大幅'
+        'small': '小',
+        'medium': '中',
+        'large': '大',
+        'choose_task_type': '请选择任务类型',
+        'prompt_placeholder': '图片中的人们对着屏幕比心',
       },
       'en-US': {
+        'env': 'API Environment',
+        'prod': 'China',
+        'prod_s': 'Global',
         'task_type': 'Task Type',
         'model': 'Model Selection',
         'images': 'Image Input',
@@ -143,17 +179,34 @@ basekit.addField({
         'auto': 'Auto',
         'small': 'Small',
         'medium': 'Medium',
-        'large': 'Large'
+        'large': 'Large',
+        'choose_task_type': 'Please select a task type',
+        'prompt_placeholder': 'The astronaut waved and the camera moved up.',
       }
     }
   },
-  
   // 定义捷径的入参
   formItems: [
     {
+      key: 'env',
+      label: t('env'),
+      component: FieldComponent.SingleSelect,
+      defaultValue: { label: t('prod'), value: ViduEnv.PROD },
+      props: {
+        options: [
+          { label: t('prod'), value: ViduEnv.PROD },
+          { label: t('prod_s'), value: ViduEnv.PROD_S }
+        ]
+      },
+      validator: {
+        required: true,
+      }
+    },
+    {
       key: 'taskType',
       label: t('task_type'),
-      component: FieldComponent.FieldSelect,
+      component: FieldComponent.SingleSelect,
+      defaultValue: { label: t('img2video'), value: ViduTaskType.IMG2VIDEO },
       props: {
         options: [
           { label: t('img2video'), value: ViduTaskType.IMG2VIDEO },
@@ -168,26 +221,14 @@ basekit.addField({
     {
       key: 'model',
       label: t('model'),
-      component: FieldComponent.FieldSelect,
+      component: FieldComponent.SingleSelect,
+      defaultValue: { label: t('viduq1'), value: ViduModel.VIDUQ1 },
       props: {
         options: [
-          { label: t('viduq1'), value: ViduModel.VIDUQ1 },
-          { label: t('vidu1_5'), value: ViduModel.VIDU1_5 },
-          { label: t('vidu2_0'), value: ViduModel.VIDU2_0 }
+          { label: 'Vidu Q1', value: ViduModel.VIDUQ1 },
+          { label: 'Vidu 1.5', value: ViduModel.VIDU1_5 },
+          { label: 'Vidu 2.0', value: ViduModel.VIDU2_0 }
         ]
-      },
-      validator: {
-        required: true,
-      }
-    },
-    {
-      key: 'images',
-      label: t('images'),
-      component: FieldComponent.FieldAttachment,
-      props: {
-        supportType: [FieldType.Attachment],
-        multiple: true,
-        maxCount: 7
       },
       validator: {
         required: true,
@@ -196,38 +237,35 @@ basekit.addField({
     {
       key: 'prompt',
       label: t('prompt'),
-      component: FieldComponent.FieldTextArea,
+      component: FieldComponent.Input,
       props: {
-        placeholder: '请输入视频生成的提示词描述...',
-        maxLength: 1500
+        placeholder: t('prompt_placeholder'),
       },
       validator: {
-        required: false,
+        required: true,
       }
     },
     {
-      key: 'style',
-      label: t('style'),
+      key: 'images',
+      label: t('images'),
       component: FieldComponent.FieldSelect,
       props: {
-        options: [
-          { label: t('general'), value: 'general' },
-          { label: t('anime'), value: 'anime' }
-        ]
+        supportType: [FieldType.Attachment],
+        mode: 'multiple',
       },
       validator: {
-        required: false,
+        required: true,
       }
     },
     {
       key: 'duration',
       label: t('duration'),
-      component: FieldComponent.FieldSelect,
+      component: FieldComponent.SingleSelect,
       props: {
         options: [
-          { label: '4秒', value: 4 },
-          { label: '5秒', value: 5 },
-          { label: '8秒', value: 8 }
+          { label: '4s', value: 4 },
+          { label: '5s', value: 5 },
+          { label: '8s', value: 8 }
         ]
       },
       validator: {
@@ -237,7 +275,7 @@ basekit.addField({
     {
       key: 'resolution',
       label: t('resolution'),
-      component: FieldComponent.FieldSelect,
+      component: FieldComponent.SingleSelect,
       props: {
         options: [
           { label: '360p', value: '360p' },
@@ -252,13 +290,13 @@ basekit.addField({
     {
       key: 'movementAmplitude',
       label: t('movement_amplitude'),
-      component: FieldComponent.FieldSelect,
+      component: FieldComponent.SingleSelect,
       props: {
         options: [
-          { label: t('auto'), value: 'auto' },
-          { label: t('small'), value: 'small' },
-          { label: t('medium'), value: 'medium' },
-          { label: t('large'), value: 'large' }
+          { label: 'auto', value: 'auto' },
+          { label: 'small', value: 'small' },
+          { label: 'medium', value: 'medium' },
+          { label: 'large', value: 'large' }
         ]
       },
       validator: {
@@ -266,51 +304,21 @@ basekit.addField({
       }
     }
   ],
-  
   // 定义捷径的返回结果类型
   resultType: {
-    type: FieldType.Object,
-    extra: {
-      icon: {
-        light: 'https://lf3-static.bytednsdoc.com/obj/eden-cn/eqgeh7upeubqnulog/chatbot.svg',
-      },
-      properties: [
-        {
-          key: 'task_id',
-          type: FieldType.Text,
-          label: t('task_id'),
-          primary: true,
-        },
-        {
-          key: 'status',
-          type: FieldType.Text,
-          label: t('status'),
-        },
-        {
-          key: 'video_url',
-          type: FieldType.Attachment,
-          label: t('video_url'),
-        },
-        {
-          key: 'cover_url',
-          type: FieldType.Attachment,
-          label: t('cover_url'),
-        }
-      ],
-    },
+    type: FieldType.Attachment
   },
-  
   // 主要执行逻辑
-  execute: async (formItemParams: any, context: any) => {
+  execute: async (formItemParams, context) => {
     const { 
-      taskType, 
-      model, 
-      images, 
+      env,
+      taskType,
+      model,
       prompt, 
-      style = 'general',
-      duration = 4, 
-      resolution = '720p',
-      movementAmplitude = 'auto'
+      images,  
+      duration, 
+      resolution,
+      movementAmplitude,
     } = formItemParams;
 
     /** 为方便查看日志，使用此方法替代console.log */
@@ -321,57 +329,41 @@ basekit.addField({
         context,
         arg
       }))
+      console.log('--------------------------------')
     }
 
     try {
-      debugLog({
-        '===1 开始执行Vidu API调用': {
-          taskType,
-          model,
-          imagesCount: images?.length || 0,
-          prompt,
-          style,
-          duration,
-          resolution,
-          movementAmplitude
-        }
-      });
-
-      // 验证图片数量
-      if (!images || images.length === 0) {
-        throw new Error('请至少上传一张图片');
-      }
-
-      // 根据任务类型验证图片数量
-      if (taskType === ViduTaskType.STARTEND2VIDEO && images.length !== 2) {
-        throw new Error('首尾帧生视频需要上传2张图片（开始帧和结束帧）');
-      }
-
-      if (taskType === ViduTaskType.REFERENCE2VIDEO && (images.length < 1 || images.length > 3)) {
-        throw new Error('参考生视频需要上传1-3张图片');
-      }
-
+      debugLog('===1 开始执行Vidu API调用');
       // 根据任务类型调用不同的Vidu API
-      let result;
-      switch (taskType) {
-        case ViduTaskType.IMG2VIDEO:
-          result = await callViduImg2Video(model, images, prompt, style, duration, resolution, movementAmplitude, context);
-          break;
-        case ViduTaskType.REFERENCE2VIDEO:
-          result = await callViduReference2Video(model, images, prompt, style, duration, resolution, movementAmplitude, context);
-          break;
-        case ViduTaskType.STARTEND2VIDEO:
-          result = await callViduStartEnd2Video(model, images, prompt, style, duration, resolution, movementAmplitude, context);
-          break;
-        default:
-          throw new Error(`不支持的任务类型: ${taskType}`);
-      }
+      const imageUrls = extractImageUrls(images);
+      const taskId = await callViduEntApi(
+        context,
+        env.value,
+        taskType.value, 
+        model.value, 
+        imageUrls, 
+        prompt, 
+        duration?.value, 
+        resolution?.value, 
+        movementAmplitude?.value,
+      );
 
       debugLog({
-        '===2 Vidu API调用结果': result
+        '===2 Vidu API调用结果': taskId
       });
 
-      return result;
+      const taskResult = await getTaskResult(context, env.value, taskId);
+      const creation = taskResult.creations?.[0];
+      const creationUrl = creation?.url || '';
+
+      return {
+        code: FieldCode.Success, // 0 表示请求成功
+        data: [{
+          name: `${uuidv4()}.mp4`,
+          content: creationUrl,
+          contentType: "attachment/url"
+        }]
+      };
 
     } catch (error: any) {
       debugLog({
@@ -385,219 +377,88 @@ basekit.addField({
 /**
  * 调用Vidu图生视频API
  */
-async function callViduImg2Video(
+async function callViduEntApi(
+  context: FieldContext,
+  env: ViduEnv,
+  taskType: ViduTaskType,
   model: string, 
-  images: any[], 
+  images: string[], 
   prompt: string, 
-  style: string,
-  duration: number, 
-  resolution: string, 
-  movementAmplitude: string,
-  context: any
-): Promise<any> {
+  duration?: number, 
+  resolution?: string, 
+  movementAmplitude?: string,
+): Promise<string> {
   try {
-    const config = getEnvConfig();
-    const imageUrls = await extractImageUrls(images, context);
+    const endpoint = TaskTypeEndpoint[taskType];
+    const apiUrl = ViduEnvApi[env];
     
     const requestData: ViduApiRequest = {
       model,
-      style: style as 'general' | 'anime',
       prompt,
-      images: imageUrls,
+      images,
       duration,
       resolution,
       movement_amplitude: movementAmplitude as 'auto' | 'small' | 'medium' | 'large'
     };
 
-    const response = await axios.post<ViduApiResponse>(
-      `${config.VIDU_API_URL}/ent/v2/img2video`,
-      requestData,
-      {
-        headers: {
-          'Authorization': config.VIDU_API_KEY,
-          'Content-Type': 'application/json',
-          'X-Request-ID': uuidv4()
-        }
-      }
-    );
+    const response = await context.fetch(`${apiUrl}/${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestData),
+    }, 'vidu_auth');
 
-    return {
-      task_id: response.data.task_id,
-      status: response.data.state,
-      video_url: '',
-      cover_url: ''
-    };
+    if (!response.ok) {
+      throw new Error(`图生视频API调用失败: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    const viduResponse = data as ViduApiResponse;
+    if (!viduResponse.task_id) {
+      throw new Error('API响应缺少task_id');
+    }
+    return viduResponse.task_id;
+
   } catch (error: any) {
-    throw new Error(`图生视频API调用失败: ${error.response?.data?.message || error.message}`);
+    throw new Error(`task failed: ${error}`);
   }
 }
 
-/**
- * 调用Vidu参考生视频API
- */
-async function callViduReference2Video(
-  model: string, 
-  images: any[], 
-  prompt: string, 
-  style: string,
-  duration: number, 
-  resolution: string, 
-  movementAmplitude: string,
-  context: any
-): Promise<any> {
-  try {
-    const config = getEnvConfig();
-    const imageUrls = await extractImageUrls(images, context);
-    
-    const requestData: ViduApiRequest = {
-      model,
-      style: style as 'general' | 'anime',
-      prompt,
-      images: imageUrls,
-      duration,
-      resolution,
-      movement_amplitude: movementAmplitude as 'auto' | 'small' | 'medium' | 'large'
-    };
+async function getTaskResult(context: FieldContext, env: ViduEnv, taskId: string): Promise<ViduGetCreationsResult> {
+  const apiUrl = ViduEnvApi[env];
+  while (true) {
+    const response = await context.fetch(`${apiUrl}/ent/v2/tasks/${taskId}/creations`, {
+      method: 'GET',
+    }, 'vidu_auth');
 
-    const response = await axios.post<ViduApiResponse>(
-      `${config.VIDU_API_URL}/ent/v2/reference2video`,
-      requestData,
-      {
-        headers: {
-          'Authorization': config.VIDU_API_KEY,
-          'Content-Type': 'application/json',
-          'X-Request-ID': uuidv4()
-        }
-      }
-    );
+    const data = await response.json();
+    if (data.state === 'success') {
+      return data;
+    }
+    if (data.state === 'failed') {
+      throw new Error(`图生视频API调用失败: ${data.err_code}`);
+    }
 
-    return {
-      task_id: response.data.task_id,
-      status: response.data.state,
-      video_url: '',
-      cover_url: ''
-    };
-  } catch (error: any) {
-    throw new Error(`参考生视频API调用失败: ${error.response?.data?.message || error.message}`);
-  }
-}
-
-/**
- * 调用Vidu首尾帧生视频API
- */
-async function callViduStartEnd2Video(
-  model: string, 
-  images: any[], 
-  prompt: string, 
-  style: string,
-  duration: number, 
-  resolution: string, 
-  movementAmplitude: string,
-  context: any
-): Promise<any> {
-  try {
-    const config = getEnvConfig();
-    const imageUrls = await extractImageUrls(images, context);
-    
-    const requestData: ViduApiRequest = {
-      model,
-      style: style as 'general' | 'anime',
-      prompt,
-      images: imageUrls,
-      duration,
-      resolution,
-      movement_amplitude: movementAmplitude as 'auto' | 'small' | 'medium' | 'large'
-    };
-
-    const response = await axios.post<ViduApiResponse>(
-      `${config.VIDU_API_URL}/ent/v2/start-end2video`,
-      requestData,
-      {
-        headers: {
-          'Authorization': config.VIDU_API_KEY,
-          'Content-Type': 'application/json',
-          'X-Request-ID': uuidv4()
-        }
-      }
-    );
-
-    return {
-      task_id: response.data.task_id,
-      status: response.data.state,
-      video_url: '',
-      cover_url: ''
-    };
-  } catch (error: any) {
-    throw new Error(`首尾帧生视频API调用失败: ${error.response?.data?.message || error.message}`);
+    await new Promise(resolve => setTimeout(resolve, 5000));
   }
 }
 
 /**
  * 从飞书附件中提取图片URL
  */
-async function extractImageUrls(images: any[], context: any): Promise<string[]> {
+function extractImageUrls(images: any[]): string[] {
   try {
-    const imageUrls: string[] = [];
-    
-    for (const image of images) {
-      if (image.token) {
-        // 使用飞书API获取文件下载链接
-        const downloadUrl = await getFeishuFileDownloadUrl(image.token, context);
-        if (downloadUrl) {
-          imageUrls.push(downloadUrl);
-        }
-      } else if (image.url) {
-        // 直接使用URL
-        imageUrls.push(image.url);
+    const imageUrls = images.map((imageAttachment) => {
+      const image = imageAttachment?.[0];
+      if (image) {
+        return image.tmp_url;
       }
-    }
-    
-    if (imageUrls.length === 0) {
-      throw new Error('无法获取图片URL');
-    }
-    
-    return imageUrls;
+    });
+    return imageUrls.filter((url) => url !== undefined);
   } catch (error: any) {
     throw new Error(`提取图片URL失败: ${error.message}`);
   }
 }
 
-/**
- * 获取飞书文件下载链接
- */
-async function getFeishuFileDownloadUrl(fileToken: string, context: any): Promise<string> {
-  try {
-    // 这里需要根据飞书API文档实现获取文件下载链接的逻辑
-    // 由于飞书API需要应用凭证，这里先返回一个占位符
-    // 实际使用时需要实现完整的飞书API调用
-    
-    // 示例实现（需要根据实际情况调整）
-    const appId = process.env['APP_ID'];
-    const appSecret = process.env['APP_SECRET'];
-    
-    if (!appId || !appSecret) {
-      throw new Error('飞书应用配置未设置');
-    }
-    
-    // 获取访问令牌
-    const tokenResponse = await axios.post('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
-      app_id: appId,
-      app_secret: appSecret
-    });
-    
-    const accessToken = tokenResponse.data.tenant_access_token;
-    
-    // 获取文件下载链接
-    const fileResponse = await axios.get(`https://open.feishu.cn/open-apis/drive/v1/files/${fileToken}/download`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    });
-    
-    return fileResponse.data.data.link;
-  } catch (error: any) {
-    console.error('获取飞书文件下载链接失败:', error);
-    // 如果获取失败，返回原始token作为备用方案
-    return `https://open.feishu.cn/open-apis/drive/v1/files/${fileToken}/download`;
-  }
-} 
+export default basekit;
