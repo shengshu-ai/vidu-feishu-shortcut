@@ -15,6 +15,7 @@ basekit.addDomainList([
 
 // 定义Vidu任务类型枚举
 enum ViduTaskType {
+  TEXT2VIDEO = 'text2video',
   IMG2VIDEO = 'img2video',
   REFERENCE2VIDEO = 'reference2video',
   STARTEND2VIDEO = 'startend2video'
@@ -29,6 +30,7 @@ enum ViduModel {
 
 
 const TaskTypeEndpoint = {
+  [ViduTaskType.TEXT2VIDEO]: 'ent/v2/text2video',
   [ViduTaskType.IMG2VIDEO]: 'ent/v2/img2video',
   [ViduTaskType.REFERENCE2VIDEO]: 'ent/v2/reference2video',
   [ViduTaskType.STARTEND2VIDEO]: 'ent/v2/start-end2video'
@@ -132,7 +134,8 @@ basekit.addField({
         'duration': '视频时长',
         'resolution': '分辨率',
         'movement_amplitude': '运动幅度',
-        'style': '风格',
+        'style': '视频风格',
+        'text2video': '文生视频',
         'img2video': '图生视频',
         'reference2video': '参考生视频',
         'startend2video': '首尾帧生视频',
@@ -143,8 +146,8 @@ basekit.addField({
         'status': '状态',
         'video_url': '视频链接',
         'cover_url': '封面链接',
-        'general': '通用风格',
-        'anime': '动漫风格',
+        'general': '写实风',
+        'anime': '动漫风',
         'auto': '自动',
         'small': '小',
         'medium': '中',
@@ -155,6 +158,7 @@ basekit.addField({
         'bgm_on': '开启',
         'bgm_off': '关闭',
         'aspect_ratio': '生视频比例',
+        'style_placeholder': '只有文生视频支持风格选择'
       },
       'en-US': {
         'env': 'API Environment',
@@ -168,6 +172,7 @@ basekit.addField({
         'resolution': 'Resolution',
         'movement_amplitude': 'Movement Amplitude',
         'style': 'Style',
+        'text2video': 'Text to Video',
         'img2video': 'Image to Video',
         'reference2video': 'Reference to Video',
         'startend2video': 'Start-End to Video',
@@ -178,7 +183,7 @@ basekit.addField({
         'status': 'Status',
         'video_url': 'Video URL',
         'cover_url': 'Cover URL',
-        'general': 'General Style',
+        'general': 'Realistic',
         'anime': 'Anime Style',
         'auto': 'Auto',
         'small': 'Small',
@@ -190,6 +195,7 @@ basekit.addField({
         'bgm_on': 'On',
         'bgm_off': 'Off',
         'aspect_ratio': 'Aspect Ratio',
+        'style_placeholder': 'Only text-to-video supports style selection',
       }
     }
   },
@@ -217,6 +223,7 @@ basekit.addField({
       defaultValue: { label: t('img2video'), value: ViduTaskType.IMG2VIDEO },
       props: {
         options: [
+          { label: t('text2video'), value: ViduTaskType.TEXT2VIDEO },
           { label: t('img2video'), value: ViduTaskType.IMG2VIDEO },
           { label: t('reference2video'), value: ViduTaskType.REFERENCE2VIDEO },
           { label: t('startend2video'), value: ViduTaskType.STARTEND2VIDEO }
@@ -262,7 +269,7 @@ basekit.addField({
         mode: 'multiple',
       },
       validator: {
-        required: true,
+        required: false,
       }
     },
     {
@@ -304,6 +311,21 @@ basekit.addField({
           { label: '16:9', value: '16:9' },
           { label: '9:16', value: '9:16' },
           { label: '1:1', value: '1:1' },
+        ]
+      },
+      validator: {
+        required: false,
+      }
+    },
+    {
+      key: 'style',
+      label: t('style'),
+      component: FieldComponent.SingleSelect,
+      props: {
+        placeholder: t('style_placeholder'),
+        options: [
+          { label: t('general'), value: 'general' },
+          { label: t('anime'), value: 'anime' }
         ]
       },
       validator: {
@@ -356,6 +378,7 @@ basekit.addField({
       duration, 
       resolution,
       aspect_ratio,
+      style,
       bgm,
       movementAmplitude,
     } = formItemParams;
@@ -385,6 +408,7 @@ basekit.addField({
         duration?.value, 
         resolution?.value, 
         aspect_ratio?.value,
+        style?.value,
         movementAmplitude?.value,
         bgm?.value,
       );
@@ -428,6 +452,7 @@ async function callViduEntApi(
   duration?: number, 
   resolution?: string, 
   aspect_ratio?: string,
+  style?: string,
   movementAmplitude?: string,
   bgm?: boolean,
 ): Promise<string> {
@@ -442,6 +467,7 @@ async function callViduEntApi(
       duration,
       resolution,
       aspect_ratio,
+      style: style as 'general' | 'anime',
       movement_amplitude: movementAmplitude as 'auto' | 'small' | 'medium' | 'large',
       bgm,
     };
@@ -492,8 +518,12 @@ async function getTaskResult(context: FieldContext, env: ViduEnv, taskId: string
 /**
  * 从飞书附件中提取图片URL
  */
-function extractImageUrls(images: any[]): string[] {
+function extractImageUrls(images: any[]): string[] | undefined {
   try {
+    if (!images) {
+      return;
+    }
+    
     const imageUrls = images.map((imageAttachments) => imageAttachments.map((image) => image.tmp_url));
     return imageUrls.flat().filter((url) => url !== undefined);
   } catch (error: any) {
