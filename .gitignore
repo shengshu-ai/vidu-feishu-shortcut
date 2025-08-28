@@ -5,3 +5,4 @@ vidu-maas.openapi.json
 node_modules/
 .cursor/
 .vscode/
+output/

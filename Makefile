@@ -1,12 +1,12 @@
 # 飞书快捷指令项目 Docker 操作命令
 
-.PHONY: help install start
+.PHONY: install start
 
-build:
+install:
 	npm install
 
 start:
 	npm run start
 
-dev:
-	npm run dev
+build:
+	npm run pack
