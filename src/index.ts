@@ -159,9 +159,11 @@ basekit.addField({
         'bgm_off': '关闭',
         'aspect_ratio': '生视频比例',
         'style_placeholder': '只有文生视频支持风格选择',
+        'images_tooltip': '每种任务类型支持的图片数量请查阅 ',
         'task_type_tooltip': '每种任务类型的请求参数请查阅 ',
-        'resolution_resolution_duration_tooltip': '每个模型支持的时长和分辨率各不相同,请参考 ',
+        'resolution_duration_tooltip': '每个模型支持的时长和分辨率各不相同,请参考 ',
         'aspect_ratio_tooltip': '只有文生视频和参考生视频支持选择视频比例',
+        'style_tooltip': '只有文生视频支持风格选择',
       },
       'en-US': {
         'env': 'API Environment',
@@ -169,7 +171,7 @@ basekit.addField({
         'prod_s': 'Global',
         'task_type': 'Task Type',
         'model': 'Model Selection',
-        'images': 'Image Input',
+        'images': 'Images Input',
         'prompt': 'Prompt',
         'duration': 'Duration',
         'resolution': 'Resolution',
@@ -199,9 +201,11 @@ basekit.addField({
         'bgm_off': 'Off',
         'aspect_ratio': 'Aspect Ratio',
         'style_placeholder': 'Only text-to-video supports style selection',
+        'images_tooltip': 'Each task type supports different number of images, please refer to ',
         'task_type_tooltip': 'Please check the request parameters for each task type: ',
         'resolution_duration_tooltip': 'Each model supports different durations and resolutions, please refer to ',
         'aspect_ratio_tooltip': 'Only text-to-video and reference-to-video support selecting aspect ratio',
+        'style_tooltip': 'Only text-to-video supports style selection',
       }
     }
   },
@@ -281,6 +285,17 @@ basekit.addField({
       key: 'images',
       label: t('images'),
       component: FieldComponent.FieldSelect,
+      tooltips: [
+        {
+          type: 'text',
+          content: t('images_tooltip')
+        },
+        {
+          type: 'link',
+          text: 'Vidu Docs',
+          link: 'https://platform.vidu.cn/docs/introduction'
+        }
+      ],
       props: {
         supportType: [FieldType.Attachment],
         mode: 'multiple',
@@ -363,21 +378,6 @@ basekit.addField({
       }
     },
     {
-      key: 'style',
-      label: t('style'),
-      component: FieldComponent.SingleSelect,
-      props: {
-        placeholder: t('style_placeholder'),
-        options: [
-          { label: t('general'), value: 'general' },
-          { label: t('anime'), value: 'anime' }
-        ]
-      },
-      validator: {
-        required: false,
-      }
-    },
-    {
       key: 'bgm',
       label: t('bgm'),
       component: FieldComponent.SingleSelect,
@@ -385,6 +385,27 @@ basekit.addField({
         options: [
           { label: t('bgm_on'), value: true },
           { label: t('bgm_off'), value: false }
+        ]
+      },
+      validator: {
+        required: false,
+      }
+    },
+    {
+      key: 'style',
+      label: t('style'),
+      component: FieldComponent.SingleSelect,
+      tooltips: [
+        {
+          type: 'text',
+          content: t('style_tooltip')
+        }
+      ],
+      props: {
+        placeholder: t('style_placeholder'),
+        options: [
+          { label: t('general'), value: 'general' },
+          { label: t('anime'), value: 'anime' }
         ]
       },
       validator: {
@@ -423,8 +444,8 @@ basekit.addField({
       duration, 
       resolution,
       aspect_ratio,
-      style,
       bgm,
+      style,
       movementAmplitude,
     } = formItemParams;
 
