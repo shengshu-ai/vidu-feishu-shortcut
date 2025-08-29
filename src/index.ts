@@ -158,7 +158,9 @@ basekit.addField({
         'bgm_on': '开启',
         'bgm_off': '关闭',
         'aspect_ratio': '生视频比例',
-        'style_placeholder': '只有文生视频支持风格选择'
+        'style_placeholder': '只有文生视频支持风格选择',
+        'task_type_tooltip': '每种任务类型的请求参数请查阅 ',
+        'resolution_resolution_duration_tooltip': '每个模型支持的时长和分辨率各不相同,请参考 ',
       },
       'en-US': {
         'env': 'API Environment',
@@ -196,6 +198,8 @@ basekit.addField({
         'bgm_off': 'Off',
         'aspect_ratio': 'Aspect Ratio',
         'style_placeholder': 'Only text-to-video supports style selection',
+        'task_type_tooltip': 'Please check the request parameters for each task type: ',
+        'resolution_duration_tooltip': 'Each model supports different durations and resolutions, please refer to ',
       }
     }
   },
@@ -221,6 +225,17 @@ basekit.addField({
       label: t('task_type'),
       component: FieldComponent.SingleSelect,
       defaultValue: { label: t('img2video'), value: ViduTaskType.IMG2VIDEO },
+      tooltips: [
+        {
+          type: 'text',
+          content: t('task_type_tooltip')
+        },
+        {
+          type: 'link',
+          text: 'Vidu Docs',
+          link: 'https://platform.vidu.cn/docs/introduction'
+        }
+      ],
       props: {
         options: [
           { label: t('text2video'), value: ViduTaskType.TEXT2VIDEO },
@@ -276,6 +291,17 @@ basekit.addField({
       key: 'duration',
       label: t('duration'),
       component: FieldComponent.SingleSelect,
+      tooltips: [
+        {
+          type: 'text',
+          content: t('resolution_duration_tooltip')
+        },
+        {
+          type: 'link',
+          text: 'Price Docs',
+          link: 'https://platform.vidu.cn/docs/pricing'
+        }
+      ],
       props: {
         options: [
           { label: '4s', value: 4 },
@@ -291,6 +317,17 @@ basekit.addField({
       key: 'resolution',
       label: t('resolution'),
       component: FieldComponent.SingleSelect,
+      tooltips: [
+        {
+          type: 'text',
+          content: t('resolution_duration_tooltip')
+        },
+        {
+          type: 'link',
+          text: 'Price Docs',
+          link: 'https://platform.vidu.cn/docs/pricing'
+        }
+      ],
       props: {
         options: [
           { label: '360p', value: '360p' },
