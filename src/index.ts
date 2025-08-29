@@ -481,7 +481,8 @@ async function callViduEntApi(
     }, 'vidu_auth');
 
     if (!response.ok) {
-      throw new Error(`图生视频API调用失败: ${response.statusText}`);
+      const error = await response.text();
+      throw new Error(`图生视频API调用失败: ${error}`);
     }
     
     const data = await response.json();
