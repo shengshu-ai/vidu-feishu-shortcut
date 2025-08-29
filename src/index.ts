@@ -105,18 +105,29 @@ interface ViduApiRequest {
 basekit.addField({
   authorizations: [
     {
-      id: 'vidu_auth',// 授权的id，用于context.fetch第三个参数以区分该请求使用哪个授权
-      platform: 'vidu',// 需要与之授权的平台,比如baidu(必须要是已经支持的三方凭证,不可随便填写,如果想要支持更多的凭证，请填写申请表单)
+      id: 'vidu_auth', // 授权的id，用于context.fetch第三个参数以区分该请求使用哪个授权
+      platform: 'Vidu', // 需要与之授权的平台,比如baidu(必须要是已经支持的三方凭证,不可随便填写,如果想要支持更多的凭证，请填写申请表单)
       type: AuthorizationType.MultiHeaderToken,
       required: true,
       params: [
-        { key: "Authorization", placeholder: "Authorization" },
+        { key: "Authorization", placeholder: "Token xxxxxx" },
+      ],
+      tooltips: [
+        {
+          type: 'text',
+          content: t('api_key_tooltip')
+        },
+        {
+          type: 'link',
+          text: 'Vidu Api Key',
+          link: 'https://shengshu.feishu.cn/docx/Fiz7drhdroWG59xpGsAcfA8Xn9b'
+        }
       ],
       instructionsUrl: "https://shengshu.feishu.cn/docx/Fiz7drhdroWG59xpGsAcfA8Xn9b",// 帮助链接，告诉使用者如何填写这个apikey
-      label: 'vidu授权',
+      label: t('vidu_label'),
       icon: {
-        light: '',
-        dark: ''
+        light: 'https://scene.vidu.zone/media-asset/091009-VqbUZH57i31ffFX7.png',
+        dark: 'https://scene.vidu.zone/media-asset/091029-8rW1nZiVyDlAEw1e.png'
       }
     }
   ],
@@ -124,6 +135,7 @@ basekit.addField({
   i18n: {
     messages: {
       'zh-CN': {
+        'vidu_label': 'Vidu AI视频生成工具',
         'env': 'API环境',
         'prod': '国内',
         'prod_s': '海外',
@@ -157,6 +169,7 @@ basekit.addField({
         'bgm': '背景音乐',
         'bgm_on': '开启',
         'bgm_off': '关闭',
+        'api_key_tooltip': '获取密钥请参考 ',
         'aspect_ratio': '生视频比例',
         'style_placeholder': '只有文生视频支持风格选择',
         'images_tooltip': '每种任务类型支持的图片数量请查阅 ',
@@ -166,6 +179,7 @@ basekit.addField({
         'style_tooltip': '只有文生视频支持风格选择',
       },
       'en-US': {
+        'vidu_label': 'Vidu AI Video Generator',
         'env': 'API Environment',
         'prod': 'China',
         'prod_s': 'Global',
@@ -200,6 +214,7 @@ basekit.addField({
         'bgm_on': 'On',
         'bgm_off': 'Off',
         'aspect_ratio': 'Aspect Ratio',
+        'api_key_tooltip': 'For obtaining the API key, please refer to ',
         'style_placeholder': 'Only text-to-video supports style selection',
         'images_tooltip': 'Each task type supports different number of images, please refer to ',
         'task_type_tooltip': 'Please check the request parameters for each task type: ',
