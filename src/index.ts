@@ -161,6 +161,7 @@ basekit.addField({
         'style_placeholder': '只有文生视频支持风格选择',
         'task_type_tooltip': '每种任务类型的请求参数请查阅 ',
         'resolution_resolution_duration_tooltip': '每个模型支持的时长和分辨率各不相同,请参考 ',
+        'aspect_ratio_tooltip': '只有文生视频和参考生视频支持选择视频比例',
       },
       'en-US': {
         'env': 'API Environment',
@@ -200,6 +201,7 @@ basekit.addField({
         'style_placeholder': 'Only text-to-video supports style selection',
         'task_type_tooltip': 'Please check the request parameters for each task type: ',
         'resolution_duration_tooltip': 'Each model supports different durations and resolutions, please refer to ',
+        'aspect_ratio_tooltip': 'Only text-to-video and reference-to-video support selecting aspect ratio',
       }
     }
   },
@@ -343,6 +345,12 @@ basekit.addField({
       key: 'aspect_ratio',
       label: t('aspect_ratio'),
       component: FieldComponent.SingleSelect,
+      tooltips: [
+        {
+          type: 'text',
+          content: t('aspect_ratio_tooltip')
+        }
+      ],
       props: {
         options: [
           { label: '16:9', value: '16:9' },
