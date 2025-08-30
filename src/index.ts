@@ -1,5 +1,4 @@
 import { basekit, FieldType, field, FieldComponent, FieldCode, AuthorizationType, FieldContext } from '@lark-opdev/block-basekit-server-api';
-import { v4 as uuidv4 } from 'uuid';
 
 const { t } = field;
 
@@ -505,7 +504,7 @@ basekit.addField({
       return {
         code: FieldCode.Success, // 0 表示请求成功
         data: [{
-          name: `${uuidv4()}.mp4`,
+          name: `${taskId}.mp4`,
           content: creationUrl,
           contentType: "attachment/url"
         }]

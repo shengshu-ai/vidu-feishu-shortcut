@@ -13,11 +13,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@lark-opdev/block-basekit-server-api": "1.0.6",
-    "@types/uuid": "^10.0.0",
-    "uuid": "^11.1.0"
+    "@lark-opdev/block-basekit-server-api": "1.0.6"
   },
   "devDependencies": {
-     "@lark-opdev/block-basekit-cli": "1.0.5"
+    "@lark-opdev/block-basekit-cli": "1.0.5"
   }
 }
