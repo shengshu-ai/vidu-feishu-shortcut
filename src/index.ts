@@ -562,7 +562,7 @@ async function callViduEntApi(
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`图生视频API调用失败: ${error}`);
+      throw new Error(`API调用失败: ${error}`);
     }
     
     const data = await response.json();
@@ -589,7 +589,7 @@ async function getTaskResult(context: FieldContext, env: ViduEnv, taskId: string
       return data;
     }
     if (data.state === 'failed') {
-      throw new Error(`图生视频API调用失败: ${data.err_code}`);
+      throw new Error(`生成视频失败: ${data.err_code}`);
     }
 
     await new Promise(resolve => setTimeout(resolve, 5000));
@@ -605,7 +605,9 @@ function extractImageUrls(images: any[]): string[] | undefined {
       return;
     }
     
-    const imageUrls = images.map((imageAttachments) => imageAttachments.map((image) => image.tmp_url));
+    const imageUrls = images
+      .filter((imageAttachments) => imageAttachments && Array.isArray(imageAttachments))
+      .map((imageAttachments) => imageAttachments.map((image) => image.tmp_url));
     return imageUrls.flat().filter((url) => url !== undefined);
   } catch (error: any) {
     throw new Error(`提取图片URL失败: ${error.message}`);
