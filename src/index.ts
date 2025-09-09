@@ -99,6 +99,7 @@ interface ViduApiRequest {
   payload?: string;
   cus_priority?: number;
   off_peak?: boolean;
+  watermark?: boolean;
 }
 
 basekit.addField({
@@ -176,6 +177,9 @@ basekit.addField({
         'resolution_duration_tooltip': '每个模型支持的时长和分辨率各不相同,请参考 ',
         'aspect_ratio_tooltip': '只有文生视频和参考生视频支持选择视频比例',
         'style_tooltip': '只有文生视频支持风格选择',
+        'watermark': '水印',
+        'watermark_on': '开启',
+        'watermark_off': '关闭',
       },
       'en-US': {
         'vidu_label': 'Vidu AI Video Generator',
@@ -220,6 +224,9 @@ basekit.addField({
         'resolution_duration_tooltip': 'Each model supports different durations and resolutions, please refer to ',
         'aspect_ratio_tooltip': 'Only text-to-video and reference-to-video support selecting aspect ratio',
         'style_tooltip': 'Only text-to-video supports style selection',
+        'watermark': 'Watermark',
+        'watermark_on': 'On',
+        'watermark_off': 'Off',
       }
     }
   },
@@ -441,6 +448,21 @@ basekit.addField({
       validator: {
         required: false,
       }
+    },
+    {
+      key: 'watermark',
+      label: t('watermark'),
+      component: FieldComponent.SingleSelect,
+      defaultValue: { label: t('watermark_on'), value: true },
+      props: {
+        options: [
+          { label: t('watermark_on'), value: true },
+          { label: t('watermark_off'), value: false }
+        ]
+      },
+      validator: {
+        required: false,
+      }
     }
   ],
   // 定义捷径的返回结果类型
@@ -461,6 +483,7 @@ basekit.addField({
       bgm,
       style,
       movementAmplitude,
+      watermark,
     } = formItemParams;
 
     /** 为方便查看日志，使用此方法替代console.log */
@@ -491,6 +514,7 @@ basekit.addField({
         style?.value,
         movementAmplitude?.value,
         bgm?.value,
+        watermark?.value,
       );
 
       debugLog({
@@ -535,6 +559,7 @@ async function callViduEntApi(
   style?: string,
   movementAmplitude?: string,
   bgm?: boolean,
+  watermark?: boolean,
 ): Promise<string> {
   try {
     const endpoint = TaskTypeEndpoint[taskType];
@@ -550,6 +575,7 @@ async function callViduEntApi(
       style: style as 'general' | 'anime',
       movement_amplitude: movementAmplitude as 'auto' | 'small' | 'medium' | 'large',
       bgm,
+      watermark,
     };
 
     const response = await context.fetch(`${apiUrl}/${endpoint}`, {
