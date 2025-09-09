@@ -17,7 +17,8 @@ enum ViduTaskType {
   TEXT2VIDEO = 'text2video',
   IMG2VIDEO = 'img2video',
   REFERENCE2VIDEO = 'reference2video',
-  STARTEND2VIDEO = 'startend2video'
+  STARTEND2VIDEO = 'startend2video',
+  REFERENCE2IMAGE = 'reference2image',
 }
 
 // 定义Vidu模型枚举
@@ -32,7 +33,8 @@ const TaskTypeEndpoint = {
   [ViduTaskType.TEXT2VIDEO]: 'ent/v2/text2video',
   [ViduTaskType.IMG2VIDEO]: 'ent/v2/img2video',
   [ViduTaskType.REFERENCE2VIDEO]: 'ent/v2/reference2video',
-  [ViduTaskType.STARTEND2VIDEO]: 'ent/v2/start-end2video'
+  [ViduTaskType.STARTEND2VIDEO]: 'ent/v2/start-end2video',
+  [ViduTaskType.REFERENCE2IMAGE]: 'ent/v2/reference2image'
 }
 
 
@@ -124,7 +126,7 @@ basekit.addField({
         }
       ],
       instructionsUrl: "https://shengshu.feishu.cn/docx/Fiz7drhdroWG59xpGsAcfA8Xn9b",// 帮助链接，告诉使用者如何填写这个apikey
-      label: t('vidu_label'),
+      label: "Vidu Api Key",
       icon: {
         light: 'https://scene.vidu.zone/media-asset/091009-VqbUZH57i31ffFX7.png',
         dark: 'https://scene.vidu.zone/media-asset/091029-8rW1nZiVyDlAEw1e.png'
@@ -135,7 +137,6 @@ basekit.addField({
   i18n: {
     messages: {
       'zh-CN': {
-        'vidu_label': 'Vidu AI视频生成工具',
         'env': 'API环境',
         'prod': '国内',
         'prod_s': '海外',
@@ -172,17 +173,16 @@ basekit.addField({
         'api_key_tooltip': '获取密钥请参考 ',
         'aspect_ratio': '生视频比例',
         'style_placeholder': '只有文生视频支持风格选择',
-        'images_tooltip': '每种任务类型支持的图片数量请查阅 ',
+        'images_tooltip': '支持1 ~ 7张图片输入',
         'task_type_tooltip': '每种任务类型的请求参数请查阅 ',
         'resolution_duration_tooltip': '每个模型支持的时长和分辨率各不相同,请参考 ',
-        'aspect_ratio_tooltip': '只有文生视频和参考生视频支持选择视频比例',
+        'aspect_ratio_tooltip': '推荐选择和输入图片接近的比例',
         'style_tooltip': '只有文生视频支持风格选择',
         'watermark': '水印',
         'watermark_on': '开启',
         'watermark_off': '关闭',
       },
       'en-US': {
-        'vidu_label': 'Vidu AI Video Generator',
         'env': 'API Environment',
         'prod': 'China',
         'prod_s': 'Global',
@@ -219,10 +219,10 @@ basekit.addField({
         'aspect_ratio': 'Aspect Ratio',
         'api_key_tooltip': 'For obtaining the API key, please refer to ',
         'style_placeholder': 'Only text-to-video supports style selection',
-        'images_tooltip': 'Each task type supports different number of images, please refer to ',
+        'images_tooltip': 'Supports 1 ~ 7 images input',
         'task_type_tooltip': 'Please check the request parameters for each task type: ',
         'resolution_duration_tooltip': 'Each model supports different durations and resolutions, please refer to ',
-        'aspect_ratio_tooltip': 'Only text-to-video and reference-to-video support selecting aspect ratio',
+        'aspect_ratio_tooltip': 'Recommend selecting the ratio closest to the input image',
         'style_tooltip': 'Only text-to-video supports style selection',
         'watermark': 'Watermark',
         'watermark_on': 'On',
@@ -248,34 +248,6 @@ basekit.addField({
       }
     },
     {
-      key: 'taskType',
-      label: t('task_type'),
-      component: FieldComponent.SingleSelect,
-      defaultValue: { label: t('img2video'), value: ViduTaskType.IMG2VIDEO },
-      tooltips: [
-        {
-          type: 'text',
-          content: t('task_type_tooltip')
-        },
-        {
-          type: 'link',
-          text: 'Vidu Docs',
-          link: 'https://platform.vidu.cn/docs/introduction'
-        }
-      ],
-      props: {
-        options: [
-          { label: t('text2video'), value: ViduTaskType.TEXT2VIDEO },
-          { label: t('img2video'), value: ViduTaskType.IMG2VIDEO },
-          { label: t('reference2video'), value: ViduTaskType.REFERENCE2VIDEO },
-          { label: t('startend2video'), value: ViduTaskType.STARTEND2VIDEO }
-        ]
-      },
-      validator: {
-        required: true,
-      }
-    },
-    {
       key: 'model',
       label: t('model'),
       component: FieldComponent.SingleSelect,
@@ -283,8 +255,6 @@ basekit.addField({
       props: {
         options: [
           { label: 'Vidu Q1', value: ViduModel.VIDUQ1 },
-          { label: 'Vidu 1.5', value: ViduModel.VIDU1_5 },
-          { label: 'Vidu 2.0', value: ViduModel.VIDU2_0 }
         ]
       },
       validator: {
@@ -310,11 +280,6 @@ basekit.addField({
         {
           type: 'text',
           content: t('images_tooltip')
-        },
-        {
-          type: 'link',
-          text: 'Vidu Docs',
-          link: 'https://platform.vidu.cn/docs/introduction'
         }
       ],
       props: {
@@ -322,59 +287,7 @@ basekit.addField({
         mode: 'multiple',
       },
       validator: {
-        required: false,
-      }
-    },
-    {
-      key: 'duration',
-      label: t('duration'),
-      component: FieldComponent.SingleSelect,
-      tooltips: [
-        {
-          type: 'text',
-          content: t('resolution_duration_tooltip')
-        },
-        {
-          type: 'link',
-          text: 'Price Docs',
-          link: 'https://platform.vidu.cn/docs/pricing'
-        }
-      ],
-      props: {
-        options: [
-          { label: '4s', value: 4 },
-          { label: '5s', value: 5 },
-          { label: '8s', value: 8 }
-        ]
-      },
-      validator: {
-        required: false,
-      }
-    },
-    {
-      key: 'resolution',
-      label: t('resolution'),
-      component: FieldComponent.SingleSelect,
-      tooltips: [
-        {
-          type: 'text',
-          content: t('resolution_duration_tooltip')
-        },
-        {
-          type: 'link',
-          text: 'Price Docs',
-          link: 'https://platform.vidu.cn/docs/pricing'
-        }
-      ],
-      props: {
-        options: [
-          { label: '360p', value: '360p' },
-          { label: '720p', value: '720p' },
-          { label: '1080p', value: '1080p' }
-        ]
-      },
-      validator: {
-        required: false,
+        required: true,
       }
     },
     {
@@ -387,62 +300,12 @@ basekit.addField({
           content: t('aspect_ratio_tooltip')
         }
       ],
+      defaultValue: { label: '16:9', value: '16:9' },
       props: {
         options: [
           { label: '16:9', value: '16:9' },
           { label: '9:16', value: '9:16' },
           { label: '1:1', value: '1:1' },
-        ]
-      },
-      validator: {
-        required: false,
-      }
-    },
-    {
-      key: 'bgm',
-      label: t('bgm'),
-      component: FieldComponent.SingleSelect,
-      props: {
-        options: [
-          { label: t('bgm_on'), value: true },
-          { label: t('bgm_off'), value: false }
-        ]
-      },
-      validator: {
-        required: false,
-      }
-    },
-    {
-      key: 'style',
-      label: t('style'),
-      component: FieldComponent.SingleSelect,
-      tooltips: [
-        {
-          type: 'text',
-          content: t('style_tooltip')
-        }
-      ],
-      props: {
-        placeholder: t('style_placeholder'),
-        options: [
-          { label: t('general'), value: 'general' },
-          { label: t('anime'), value: 'anime' }
-        ]
-      },
-      validator: {
-        required: false,
-      }
-    },
-    {
-      key: 'movementAmplitude',
-      label: t('movement_amplitude'),
-      component: FieldComponent.SingleSelect,
-      props: {
-        options: [
-          { label: 'auto', value: 'auto' },
-          { label: 'small', value: 'small' },
-          { label: 'medium', value: 'medium' },
-          { label: 'large', value: 'large' }
         ]
       },
       validator: {
@@ -473,16 +336,10 @@ basekit.addField({
   execute: async (formItemParams, context) => {
     const { 
       env,
-      taskType,
       model,
       prompt, 
       images,  
-      duration, 
-      resolution,
       aspect_ratio,
-      bgm,
-      style,
-      movementAmplitude,
       watermark,
     } = formItemParams;
 
@@ -504,17 +361,17 @@ basekit.addField({
       const taskId = await callViduEntApi(
         context,
         env.value,
-        taskType.value, 
+        ViduTaskType.REFERENCE2IMAGE,
         model.value, 
         prompt, 
         imageUrls, 
-        duration?.value, 
-        resolution?.value, 
-        aspect_ratio?.value,
-        style?.value,
-        movementAmplitude?.value,
-        bgm?.value,
-        watermark?.value,
+        undefined, // duration
+        undefined, // resolution
+        aspect_ratio?.value, // aspect_ratio
+        undefined, // style
+        undefined, // movementAmplitude
+        undefined, // bgm
+        watermark?.value, // watermark
       );
 
       debugLog({
@@ -528,7 +385,7 @@ basekit.addField({
       return {
         code: FieldCode.Success, // 0 表示请求成功
         data: [{
-          name: `${taskId}.mp4`,
+          name: `${taskId}.png`,
           content: creationUrl,
           contentType: "attachment/url"
         }]
